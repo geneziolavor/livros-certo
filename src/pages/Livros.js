@@ -35,6 +35,7 @@ import {
   Delete as DeleteIcon,
   Search as SearchIcon,
   Clear as ClearIcon,
+  FilterList as FilterListIcon,
   MenuBook as MenuBookIcon
 } from '@mui/icons-material';
 
