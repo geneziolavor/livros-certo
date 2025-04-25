@@ -1,31 +1,37 @@
 const express = require('express');
+const mongoose = require('mongoose');
 const cors = require('cors');
-const connectDB = require('./src/config/db');
-const lembretesRoutes = require('./src/routes/lembretes');
-require('dotenv').config();
+const path = require('path');
 
 const app = express();
-
-// Conectar ao MongoDB
-connectDB();
 
 // Middleware
 app.use(cors());
 app.use(express.json());
 
+// Conexão com o MongoDB
+mongoose.connect('mongodb://localhost:27017/livros-certo', {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+})
+.then(() => console.log('Conectado ao MongoDB'))
+.catch(err => console.error('Erro ao conectar ao MongoDB:', err));
+
 // Rotas
-app.use('/api/lembretes', lembretesRoutes);
+app.use('/api', require('./routes/professorRoutes'));
+app.use('/api', require('./routes/alunoRoutes'));
+app.use('/api', require('./routes/livroRoutes'));
+app.use('/api', require('./routes/horarioRoutes'));
+app.use('/api', require('./routes/lembreteRoutes'));
 
 // Servir arquivos estáticos em produção
 if (process.env.NODE_ENV === 'production') {
-  app.use(express.static('build'));
+  app.use(express.static(path.join(__dirname, 'build')));
+  
   app.get('*', (req, res) => {
-    res.sendFile(path.resolve(__dirname, 'build', 'index.html'));
+    res.sendFile(path.join(__dirname, 'build', 'index.html'));
   });
 }
 
-const PORT = process.env.PORT || 3000;
-
-app.listen(PORT, () => {
-  console.log(`Servidor rodando na porta ${PORT}`);
-}); 
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => console.log(`Servidor rodando na porta ${PORT}`)); 
