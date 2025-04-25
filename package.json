@@ -14,6 +14,12 @@
     "heroku-postbuild": "NPM_CONFIG_PRODUCTION=false npm install && npm run build"
   },
   "dependencies": {
+    "@emotion/react": "^11.10.6",
+    "@emotion/styled": "^11.10.6",
+    "@mui/icons-material": "^5.11.16",
+    "@mui/material": "^5.11.16",
+    "@mui/system": "^7.0.2",
+    "@mui/utils": "^7.0.2",
     "cors": "^2.8.5",
     "dotenv": "^16.0.3",
     "express": "^4.18.2",
@@ -22,10 +28,7 @@
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.10.0",
     "react-scripts": "5.0.1",
-    "@mui/material": "^5.11.16",
-    "@mui/icons-material": "^5.11.16",
-    "@emotion/react": "^11.10.6",
-    "@emotion/styled": "^11.10.6"
+    "web-vitals": "^4.2.4"
   },
   "devDependencies": {
     "concurrently": "^8.0.1",
