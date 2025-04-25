@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Container,
   Typography,
@@ -21,7 +21,8 @@ import {
   DialogActions,
   FormHelperText,
   Snackbar,
-  Alert
+  Alert,
+  CircularProgress
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -31,35 +32,21 @@ import {
   Clear as ClearIcon
 } from '@mui/icons-material';
 
-// Dados mockados para exemplo
-const MOCK_ALUNOS = [
-  { id: 1, nome: 'Ana Silva', serie: '6º Ano', turno: 'Manhã', telefone: '(85) 99123-4567' },
-  { id: 2, nome: 'João Oliveira', serie: '7º Ano', turno: 'Manhã', telefone: '(85) 98765-4321' },
-  { id: 3, nome: 'Maria Santos', serie: '8º Ano', turno: 'Tarde', telefone: '(85) 99876-5432' },
-  { id: 4, nome: 'Pedro Lima', serie: '9º Ano', turno: 'Manhã', telefone: '(85) 99765-4322' },
-  { id: 5, nome: 'Carla Souza', serie: '1º Ano EM', turno: 'Tarde', telefone: '(85) 99888-7777' }
-];
-
-const SERIES = [
-  '6º Ano', '7º Ano', '8º Ano', '9º Ano',
-  '1º Ano EM', '2º Ano EM', '3º Ano EM'
-];
-
-const TURNOS = ['Manhã', 'Tarde', 'Noite'];
+// URL base da API
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
 const Alunos = () => {
-  const [alunos, setAlunos] = useState(MOCK_ALUNOS);
-  const [filteredAlunos, setFilteredAlunos] = useState(MOCK_ALUNOS);
+  const [alunos, setAlunos] = useState([]);
+  const [filteredAlunos, setFilteredAlunos] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterSerie, setFilterSerie] = useState('');
-  const [filterTurno, setFilterTurno] = useState('');
+  const [filterTurma, setFilterTurma] = useState('');
   
+  const [loading, setLoading] = useState(false);
   const [openDialog, setOpenDialog] = useState(false);
   const [currentAluno, setCurrentAluno] = useState({
-    id: null,
     nome: '',
-    serie: '',
-    turno: '',
+    email: '',
+    turma: '',
     telefone: ''
   });
   
@@ -69,6 +56,33 @@ const Alunos = () => {
     message: '',
     severity: 'success'
   });
+
+  // Carregar alunos do backend ao iniciar
+  useEffect(() => {
+    fetchAlunos();
+  }, []);
+
+  // Buscar alunos na API
+  const fetchAlunos = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch(`${API_URL}/alunos`);
+      const result = await response.json();
+      
+      if (result.success) {
+        setAlunos(result.data);
+        setFilteredAlunos(result.data);
+        console.log('Alunos carregados:', result.data);
+      } else {
+        handleOpenSnackbar(result.message || 'Erro ao buscar alunos', 'error');
+      }
+    } catch (error) {
+      console.error('Erro ao buscar alunos:', error);
+      handleOpenSnackbar('Não foi possível conectar ao servidor', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Funções para manipulação do snackbar
   const handleOpenSnackbar = (message, severity = 'success') => {
@@ -92,16 +106,13 @@ const Alunos = () => {
     
     if (searchTerm) {
       result = result.filter(aluno =>
-        aluno.nome.toLowerCase().includes(searchTerm.toLowerCase())
+        aluno.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        aluno.email.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
     
-    if (filterSerie) {
-      result = result.filter(aluno => aluno.serie === filterSerie);
-    }
-    
-    if (filterTurno) {
-      result = result.filter(aluno => aluno.turno === filterTurno);
+    if (filterTurma) {
+      result = result.filter(aluno => aluno.turma === filterTurma);
     }
     
     setFilteredAlunos(result);
@@ -109,9 +120,14 @@ const Alunos = () => {
 
   const clearFilters = () => {
     setSearchTerm('');
-    setFilterSerie('');
-    setFilterTurno('');
+    setFilterTurma('');
     setFilteredAlunos(alunos);
+  };
+
+  // Obter lista de turmas disponíveis
+  const getTurmas = () => {
+    const turmas = [...new Set(alunos.map(aluno => aluno.turma))];
+    return turmas.sort();
   };
 
   // Funções para manipulação do diálogo de cadastro/edição
@@ -120,10 +136,9 @@ const Alunos = () => {
       setCurrentAluno({ ...aluno });
     } else {
       setCurrentAluno({
-        id: alunos.length > 0 ? Math.max(...alunos.map(a => a.id)) + 1 : 1,
         nome: '',
-        serie: '',
-        turno: '',
+        email: '',
+        turma: '',
         telefone: ''
       });
     }
@@ -158,153 +173,96 @@ const Alunos = () => {
       newErrors.nome = 'Nome é obrigatório';
     }
     
-    if (!currentAluno.serie) {
-      newErrors.serie = 'Série é obrigatória';
+    if (!currentAluno.email.trim()) {
+      newErrors.email = 'Email é obrigatório';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(currentAluno.email)) {
+      newErrors.email = 'Email inválido';
     }
     
-    if (!currentAluno.turno) {
-      newErrors.turno = 'Turno é obrigatório';
+    if (!currentAluno.turma.trim()) {
+      newErrors.turma = 'Turma é obrigatória';
     }
     
-    if (!currentAluno.telefone.trim()) {
-      newErrors.telefone = 'Telefone é obrigatório';
-    } else if (!/^\(\d{2}\)\s\d{4,5}-\d{4}$/.test(currentAluno.telefone)) {
-      newErrors.telefone = 'Formato inválido. Use (00) 00000-0000';
+    if (currentAluno.telefone && !/^[0-9]{10,11}$/.test(currentAluno.telefone.replace(/\D/g, ''))) {
+      newErrors.telefone = 'Formato inválido. Use apenas números (DDD + número)';
     }
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSaveAluno = () => {
+  const handleSaveAluno = async () => {
     if (!validateForm()) return;
     
-    if (currentAluno.id) {
-      // Editar aluno existente
-      const updatedAlunos = alunos.map(aluno =>
-        aluno.id === currentAluno.id ? currentAluno : aluno
-      );
-      setAlunos(updatedAlunos);
-      setFilteredAlunos(
-        filteredAlunos.map(aluno =>
-          aluno.id === currentAluno.id ? currentAluno : aluno
-        )
-      );
-      handleOpenSnackbar('Aluno atualizado com sucesso!');
-    } else {
-      // Adicionar novo aluno
-      const newAluno = {
-        ...currentAluno,
-        id: alunos.length > 0 ? Math.max(...alunos.map(a => a.id)) + 1 : 1
-      };
-      setAlunos([...alunos, newAluno]);
-      setFilteredAlunos([...filteredAlunos, newAluno]);
-      handleOpenSnackbar('Aluno cadastrado com sucesso!');
+    setLoading(true);
+    try {
+      const isEditing = Boolean(currentAluno._id);
+      const url = isEditing 
+        ? `${API_URL}/alunos/${currentAluno._id}` 
+        : `${API_URL}/alunos`;
+      
+      const method = isEditing ? 'PUT' : 'POST';
+      
+      const response = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(currentAluno)
+      });
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        // Atualizar a lista de alunos
+        fetchAlunos();
+        handleCloseDialog();
+        handleOpenSnackbar(result.message || (isEditing ? 'Aluno atualizado com sucesso!' : 'Aluno cadastrado com sucesso!'));
+      } else {
+        handleOpenSnackbar(result.error || result.message || 'Erro ao salvar aluno', 'error');
+      }
+    } catch (error) {
+      console.error('Erro ao salvar aluno:', error);
+      handleOpenSnackbar('Falha na comunicação com o servidor', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteAluno = async (id) => {
+    if (!window.confirm('Tem certeza que deseja excluir este aluno?')) {
+      return;
     }
     
-    handleCloseDialog();
-  };
-
-  const handleDeleteAluno = (id) => {
-    if (window.confirm('Tem certeza que deseja excluir este aluno?')) {
-      const updatedAlunos = alunos.filter(aluno => aluno.id !== id);
-      setAlunos(updatedAlunos);
-      setFilteredAlunos(filteredAlunos.filter(aluno => aluno.id !== id));
-      handleOpenSnackbar('Aluno excluído com sucesso!');
+    setLoading(true);
+    try {
+      const response = await fetch(`${API_URL}/alunos/${id}`, {
+        method: 'DELETE'
+      });
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        // Atualizar a lista de alunos
+        fetchAlunos();
+        handleOpenSnackbar(result.message || 'Aluno removido com sucesso!');
+      } else {
+        handleOpenSnackbar(result.error || result.message || 'Erro ao remover aluno', 'error');
+      }
+    } catch (error) {
+      console.error('Erro ao remover aluno:', error);
+      handleOpenSnackbar('Falha na comunicação com o servidor', 'error');
+    } finally {
+      setLoading(false);
     }
   };
 
+  // Renderização
   return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
-      <Box mb={4}>
-        <Typography variant="h4" component="h1" color="primary" gutterBottom>
+    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
+        <Typography variant="h4" component="h1" gutterBottom>
           Cadastro de Alunos
-        </Typography>
-        <Typography variant="body1" gutterBottom>
-          Gerencie os dados dos alunos por série e turno para configuração dos lembretes de livros.
-        </Typography>
-      </Box>
-
-      {/* Seção de Filtros */}
-      <Paper sx={{ p: 3, mb: 4 }}>
-        <Grid container spacing={2} alignItems="center">
-          <Grid item xs={12} sm={4} md={4}>
-            <TextField
-              fullWidth
-              label="Buscar por nome"
-              variant="outlined"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              InputProps={{
-                endAdornment: searchTerm && (
-                  <IconButton size="small" onClick={() => setSearchTerm('')}>
-                    <ClearIcon />
-                  </IconButton>
-                )
-              }}
-            />
-          </Grid>
-          <Grid item xs={12} sm={3} md={3}>
-            <FormControl fullWidth variant="outlined">
-              <InputLabel>Série</InputLabel>
-              <Select
-                value={filterSerie}
-                onChange={(e) => setFilterSerie(e.target.value)}
-                label="Série"
-              >
-                <MenuItem value="">Todas</MenuItem>
-                {SERIES.map((serie) => (
-                  <MenuItem key={serie} value={serie}>
-                    {serie}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </Grid>
-          <Grid item xs={12} sm={3} md={3}>
-            <FormControl fullWidth variant="outlined">
-              <InputLabel>Turno</InputLabel>
-              <Select
-                value={filterTurno}
-                onChange={(e) => setFilterTurno(e.target.value)}
-                label="Turno"
-              >
-                <MenuItem value="">Todos</MenuItem>
-                {TURNOS.map((turno) => (
-                  <MenuItem key={turno} value={turno}>
-                    {turno}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </Grid>
-          <Grid item xs={12} sm={2} md={2}>
-            <Box display="flex" justifyContent="space-between">
-              <Button
-                variant="outlined"
-                color="primary"
-                startIcon={<SearchIcon />}
-                onClick={handleSearch}
-                sx={{ mr: 1 }}
-              >
-                Filtrar
-              </Button>
-              <Button
-                variant="text"
-                color="inherit"
-                onClick={clearFilters}
-              >
-                Limpar
-              </Button>
-            </Box>
-          </Grid>
-        </Grid>
-      </Paper>
-
-      {/* Seção de Listagem */}
-      <Box mb={4} display="flex" justifyContent="space-between" alignItems="center">
-        <Typography variant="h5" component="h2">
-          Lista de Alunos ({filteredAlunos.length})
         </Typography>
         <Button
           variant="contained"
@@ -316,59 +274,120 @@ const Alunos = () => {
         </Button>
       </Box>
 
-      {filteredAlunos.length === 0 ? (
-        <Paper sx={{ p: 4, textAlign: 'center' }}>
-          <Typography variant="body1" color="textSecondary">
-            Nenhum aluno encontrado.
-          </Typography>
-        </Paper>
+      {/* Filtros */}
+      <Paper sx={{ p: 2, mb: 3 }}>
+        <Grid container spacing={2} alignItems="center">
+          <Grid item xs={12} sm={4}>
+            <TextField
+              fullWidth
+              label="Buscar por nome ou email"
+              variant="outlined"
+              size="small"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </Grid>
+          <Grid item xs={12} sm={3}>
+            <FormControl fullWidth size="small">
+              <InputLabel>Filtrar por Turma</InputLabel>
+              <Select
+                value={filterTurma}
+                label="Filtrar por Turma"
+                onChange={(e) => setFilterTurma(e.target.value)}
+              >
+                <MenuItem value="">Todas</MenuItem>
+                {getTurmas().map((turma) => (
+                  <MenuItem key={turma} value={turma}>
+                    {turma}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Grid>
+          <Grid item>
+            <Button
+              variant="contained"
+              color="primary"
+              startIcon={<SearchIcon />}
+              onClick={handleSearch}
+            >
+              Buscar
+            </Button>
+          </Grid>
+          <Grid item>
+            <Button
+              variant="outlined"
+              startIcon={<ClearIcon />}
+              onClick={clearFilters}
+            >
+              Limpar
+            </Button>
+          </Grid>
+        </Grid>
+      </Paper>
+
+      {/* Lista de Alunos */}
+      {loading ? (
+        <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
+          <CircularProgress />
+        </Box>
       ) : (
-        <Grid container spacing={3}>
-          {filteredAlunos.map((aluno) => (
-            <Grid item xs={12} sm={6} md={4} key={aluno.id}>
-              <Card>
-                <CardContent>
-                  <Typography variant="h6" component="h3" gutterBottom>
-                    {aluno.nome}
-                  </Typography>
-                  <Divider sx={{ my: 1 }} />
-                  <Typography variant="body2" color="textSecondary" gutterBottom>
-                    <strong>Série:</strong> {aluno.serie}
-                  </Typography>
-                  <Typography variant="body2" color="textSecondary" gutterBottom>
-                    <strong>Turno:</strong> {aluno.turno}
-                  </Typography>
-                  <Typography variant="body2" color="textSecondary" gutterBottom>
-                    <strong>Telefone:</strong> {aluno.telefone}
-                  </Typography>
-                  <Box mt={2} display="flex" justifyContent="flex-end">
-                    <IconButton
-                      color="primary"
-                      onClick={() => handleOpenDialog(aluno)}
-                      size="small"
-                      sx={{ mr: 1 }}
-                    >
-                      <EditIcon />
-                    </IconButton>
-                    <IconButton
-                      color="error"
-                      onClick={() => handleDeleteAluno(aluno.id)}
-                      size="small"
-                    >
-                      <DeleteIcon />
-                    </IconButton>
-                  </Box>
-                </CardContent>
-              </Card>
+        <Grid container spacing={2}>
+          {filteredAlunos.length > 0 ? (
+            filteredAlunos.map((aluno) => (
+              <Grid item xs={12} sm={6} md={4} key={aluno._id}>
+                <Card>
+                  <CardContent>
+                    <Typography variant="h6" component="div">
+                      {aluno.nome}
+                    </Typography>
+                    <Typography color="text.secondary">
+                      {aluno.email}
+                    </Typography>
+                    <Typography variant="body2" sx={{ mt: 1 }}>
+                      <strong>Turma:</strong> {aluno.turma}
+                    </Typography>
+                    {aluno.telefone && (
+                      <Typography variant="body2">
+                        <strong>Telefone:</strong> {aluno.telefone}
+                      </Typography>
+                    )}
+                    <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end' }}>
+                      <IconButton 
+                        color="primary" 
+                        onClick={() => handleOpenDialog(aluno)}
+                        aria-label="Editar aluno"
+                      >
+                        <EditIcon />
+                      </IconButton>
+                      <IconButton 
+                        color="error" 
+                        onClick={() => handleDeleteAluno(aluno._id)}
+                        aria-label="Remover aluno"
+                      >
+                        <DeleteIcon />
+                      </IconButton>
+                    </Box>
+                  </CardContent>
+                </Card>
+              </Grid>
+            ))
+          ) : (
+            <Grid item xs={12}>
+              <Paper sx={{ p: 3, textAlign: 'center' }}>
+                <Typography variant="h6" color="text.secondary">
+                  Nenhum aluno encontrado
+                </Typography>
+              </Paper>
             </Grid>
-          ))}
+          )}
         </Grid>
       )}
 
-      {/* Diálogo de cadastro/edição */}
+      {/* Diálogo de Cadastro/Edição */}
       <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
         <DialogTitle>
-          {currentAluno.id ? 'Editar Aluno' : 'Novo Aluno'}
+          {currentAluno._id ? 'Editar Aluno' : 'Cadastrar Novo Aluno'}
         </DialogTitle>
         <DialogContent dividers>
           <Grid container spacing={2}>
@@ -379,63 +398,45 @@ const Alunos = () => {
                 name="nome"
                 value={currentAluno.nome}
                 onChange={handleInputChange}
-                variant="outlined"
-                error={!!errors.nome}
+                error={Boolean(errors.nome)}
                 helperText={errors.nome}
-                margin="normal"
-                autoFocus
+                required
               />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <FormControl fullWidth error={!!errors.serie} margin="normal">
-                <InputLabel>Série</InputLabel>
-                <Select
-                  name="serie"
-                  value={currentAluno.serie}
-                  onChange={handleInputChange}
-                  label="Série"
-                >
-                  <MenuItem value="">Selecione</MenuItem>
-                  {SERIES.map((serie) => (
-                    <MenuItem key={serie} value={serie}>
-                      {serie}
-                    </MenuItem>
-                  ))}
-                </Select>
-                {errors.serie && <FormHelperText>{errors.serie}</FormHelperText>}
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <FormControl fullWidth error={!!errors.turno} margin="normal">
-                <InputLabel>Turno</InputLabel>
-                <Select
-                  name="turno"
-                  value={currentAluno.turno}
-                  onChange={handleInputChange}
-                  label="Turno"
-                >
-                  <MenuItem value="">Selecione</MenuItem>
-                  {TURNOS.map((turno) => (
-                    <MenuItem key={turno} value={turno}>
-                      {turno}
-                    </MenuItem>
-                  ))}
-                </Select>
-                {errors.turno && <FormHelperText>{errors.turno}</FormHelperText>}
-              </FormControl>
             </Grid>
             <Grid item xs={12}>
               <TextField
                 fullWidth
-                label="Telefone do responsável"
+                label="Email"
+                name="email"
+                type="email"
+                value={currentAluno.email}
+                onChange={handleInputChange}
+                error={Boolean(errors.email)}
+                helperText={errors.email}
+                required
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Turma"
+                name="turma"
+                value={currentAluno.turma}
+                onChange={handleInputChange}
+                error={Boolean(errors.turma)}
+                helperText={errors.turma}
+                required
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Telefone"
                 name="telefone"
                 value={currentAluno.telefone}
                 onChange={handleInputChange}
-                variant="outlined"
-                error={!!errors.telefone}
-                helperText={errors.telefone || "Formato: (00) 00000-0000"}
-                margin="normal"
-                placeholder="(00) 00000-0000"
+                error={Boolean(errors.telefone)}
+                helperText={errors.telefone || 'Use apenas números (DDD + número)'}
               />
             </Grid>
           </Grid>
@@ -444,18 +445,23 @@ const Alunos = () => {
           <Button onClick={handleCloseDialog} color="inherit">
             Cancelar
           </Button>
-          <Button onClick={handleSaveAluno} variant="contained" color="primary">
-            Salvar
+          <Button 
+            onClick={handleSaveAluno} 
+            variant="contained" 
+            color="primary"
+            disabled={loading}
+          >
+            {loading ? <CircularProgress size={24} /> : 'Salvar'}
           </Button>
         </DialogActions>
       </Dialog>
 
-      {/* Snackbar para feedback */}
+      {/* Snackbar para mensagens */}
       <Snackbar
         open={snackbar.open}
-        autoHideDuration={5000}
+        autoHideDuration={6000}
         onClose={handleCloseSnackbar}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       >
         <Alert 
           onClose={handleCloseSnackbar} 
