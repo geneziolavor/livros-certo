@@ -33,7 +33,7 @@ import {
 } from '@mui/icons-material';
 
 // URL base da API
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+const API_URL = process.env.REACT_APP_API_URL || 'https://livroscertos.netlify.app/api';
 
 const Alunos = () => {
   const [alunos, setAlunos] = useState([]);
