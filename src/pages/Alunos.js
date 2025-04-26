@@ -201,6 +201,9 @@ const Alunos = () => {
         ? `${API_URL}/alunos/${currentAluno._id}` 
         : `${API_URL}/alunos`;
       
+      console.log('Enviando requisição para:', url);
+      console.log('Dados:', JSON.stringify(currentAluno, null, 2));
+      
       const method = isEditing ? 'PUT' : 'POST';
       
       const response = await fetch(url, {
@@ -211,7 +214,21 @@ const Alunos = () => {
         body: JSON.stringify(currentAluno)
       });
       
-      const result = await response.json();
+      console.log('Status da resposta:', response.status);
+      
+      // Tentar obter o corpo mesmo com erro
+      let result;
+      try {
+        result = await response.json();
+        console.log('Resposta recebida:', JSON.stringify(result, null, 2));
+      } catch (parseError) {
+        console.error('Erro ao analisar resposta:', parseError);
+        result = { 
+          success: false, 
+          message: 'Erro no formato da resposta', 
+          error: 'Não foi possível processar a resposta do servidor'
+        };
+      }
       
       if (result.success) {
         // Atualizar a lista de alunos
@@ -223,7 +240,7 @@ const Alunos = () => {
       }
     } catch (error) {
       console.error('Erro ao salvar aluno:', error);
-      handleOpenSnackbar('Falha na comunicação com o servidor', 'error');
+      handleOpenSnackbar(`Falha na comunicação com o servidor: ${error.message}`, 'error');
     } finally {
       setLoading(false);
     }
