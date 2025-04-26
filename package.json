@@ -11,6 +11,10 @@
     "start:lambda": "netlify-lambda serve functions"
   },
   "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.0",
+    "@mui/icons-material": "^7.0.2",
+    "@mui/material": "^7.0.2",
     "assert": "^2.1.0",
     "axios": "^1.6.5",
     "bootstrap": "^5.3.2",
