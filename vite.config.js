@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { resolve } from 'path';
+import fs from 'fs';
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -8,7 +9,16 @@ export default defineConfig({
     react({
       // Aplica JSX a todos os arquivos .js
       include: '**/*.{jsx,js,ts,tsx}',
-    })
+    }),
+    {
+      name: 'copy-redirects',
+      closeBundle() {
+        // Copia o arquivo _redirects para a pasta dist após o build
+        if (fs.existsSync('_redirects')) {
+          fs.copyFileSync('_redirects', 'dist/_redirects');
+        }
+      }
+    }
   ],
   root: './',
   publicDir: 'public',
