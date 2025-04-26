@@ -1,6 +1,6 @@
 [build]
   command = "npm run build"
-  publish = "build"
+  publish = "dist"
   functions = "functions"
 
 [dev]
@@ -26,5 +26,5 @@
   node_bundler = "esbuild"
 
 [build.environment]
-  NODE_VERSION = "16"
+  NODE_VERSION = "18.16.0"
   NPM_VERSION = "8" 
