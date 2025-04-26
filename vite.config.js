@@ -25,6 +25,9 @@ export default defineConfig({
     outDir: 'dist',
     sourcemap: true,
     assetsInlineLimit: 4096,
+    rollupOptions: {
+      external: ['web-vitals'],
+    }
   },
   esbuild: {
     loader: 'jsx',
@@ -37,6 +40,7 @@ export default defineConfig({
         '.js': 'jsx',
       },
     },
+    include: ['web-vitals']
   },
   server: {
     port: 3000,
