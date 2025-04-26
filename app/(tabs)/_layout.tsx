@@ -67,6 +67,14 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="emprestimos"
+        options={{
+          title: 'Empréstimos',
+          tabBarIcon: ({ color }) => <MaterialIcons name="swap-horiz" size={28} color={color} />,
+          tabBarLabelStyle: { fontSize: 12 }
+        }}
+      />
+      <Tabs.Screen
         name="horarios"
         options={{
           title: 'Horários',

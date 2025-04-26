@@ -7,6 +7,7 @@ import { useEffect } from 'react';
 import 'react-native-reanimated';
 import * as Notifications from 'expo-notifications';
 import { MaterialIcons } from '@expo/vector-icons';
+import { Database } from '../lib/database';
 
 import { useColorScheme } from '@/hooks/useColorScheme';
 
@@ -35,6 +36,16 @@ export default function AppLayout() {
   }, [loaded]);
 
   useEffect(() => {
+    // Inicializar banco de dados
+    const inicializarDatabase = async () => {
+      try {
+        await Database.initDB();
+        console.log('Banco de dados inicializado com sucesso!');
+      } catch (error) {
+        console.error('Erro ao inicializar banco de dados:', error);
+      }
+    };
+
     // Registrar manipulador de notificações
     const subscription = Notifications.addNotificationReceivedListener(notification => {
       console.log('Notificação recebida:', notification);
@@ -46,6 +57,7 @@ export default function AppLayout() {
       console.log('Status da permissão de notificações:', status);
     };
     
+    inicializarDatabase();
     inicializarNotificacoes();
     
     return () => {
