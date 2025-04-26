@@ -24,13 +24,24 @@ app.use(express.json());
 app.use('/.netlify/functions/api', router);
 
 // Conectar ao MongoDB Atlas
-mongoose.connect(process.env.MONGODB_URI || 'mongodb+srv://usuariodb:senhadb@cluster0.mongodb.net/livros-db', {
+mongoose.connect(process.env.MONGODB_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
   serverSelectionTimeoutMS: 5000
 })
-.then(() => console.log('MongoDB conectado'))
-.catch(err => console.error('Erro ao conectar ao MongoDB:', err));
+.then(() => {
+  console.log('✅ MongoDB Atlas conectado com sucesso!');
+  console.log('🔗 Conectado a: ' + process.env.MONGODB_URI.split('@')[1].split('/?')[0]);
+})
+.catch(err => {
+  console.error('❌ Erro ao conectar ao MongoDB:', err.message);
+  console.error('❌ Código do erro:', err.code);
+  console.error('🔄 URI de conexão utilizada:', 
+    process.env.MONGODB_URI ? 
+    process.env.MONGODB_URI.replace(/\/\/([^:]+):([^@]+)@/, '//****:****@') : 
+    'Não definida'
+  );
+});
 
 // Rota de teste
 router.get('/', (req, res) => {
