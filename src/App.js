@@ -82,7 +82,7 @@ function App() {
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <Router>
-        <div className="App">
+    <div className="App">
           <Navbar />
           <main>
             <Routes>
@@ -95,7 +95,7 @@ function App() {
             </Routes>
           </main>
           <Footer />
-        </div>
+    </div>
       </Router>
     </ThemeProvider>
   );
