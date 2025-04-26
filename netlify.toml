@@ -8,19 +8,23 @@
   port = 3000
   targetPort = 3000
 
-# Proxying to backend service
+# Redirecionamento de API para funções Netlify
 [[redirects]]
   from = "/api/*"
-  to = "/.netlify/functions/:splat"
+  to = "/.netlify/functions/api/:splat"
   status = 200
   force = true
 
-# SPA setup
+# SPA redirects
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
 
+[functions]
+  directory = "functions"
+  node_bundler = "esbuild"
+
 [build.environment]
-  NODE_VERSION = "18"
-  NPM_VERSION = "9" 
+  NODE_VERSION = "16"
+  NPM_VERSION = "8" 
